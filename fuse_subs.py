@@ -12,7 +12,6 @@ from grid_utils import table_properties, volt_mapping, table_relation, tab_conn_
 from model import ModelStack
 
 logger = gen_logger()
-data_dict = {}  # global variable
 
 
 def get_data_from_db(data_source, tabs):
@@ -25,7 +24,7 @@ def get_data_from_db(data_source, tabs):
     Returns:
 
     """
-    global data_dict
+    data_dict = {}
     db_type = data_source['type'].upper()
     if db_type == 'ORACLE':
         logger.info("开始读取数据...")
@@ -49,12 +48,14 @@ def get_data_from_db(data_source, tabs):
     else:  # TODO
         logger.error("unsupported database type")
         pass
+    return data_dict
 
 
-def compare_volt(entity1, entity2):
+def compare_volt(data_dict, entity1, entity2):
     """比较两个实体的电压等级是否一致。
 
     Args:
+        data_dict(dict):
         entity1(Entity):
         entity2(Entity):
 
@@ -159,10 +160,11 @@ def _compute_name_fea(name1, name2):
     return [sim1, sim2, sim3, len_ratio, both_has_num, has_same_num, both_has_char, has_same_char]
 
 
-def get_text_fea(entity1, entity2):
+def get_text_fea(data_dict, entity1, entity2):
     """对于给定的两个实体，计算其文本特征。
 
     Args:
+        data_dict(dict):
         entity1(Entity):
         entity2(Entity):
 
@@ -220,10 +222,11 @@ def get_connected_value(df1, value_field1, values1, conn_field, df2, target_fiel
         return value2
 
 
-def get_children(entity):
+def get_children(data_dict, entity):
     """根据输入的实体，获取其子节点实体。
 
     Args:
+        data_dict(dict):
         entity(Entity):
 
     Returns:
@@ -264,10 +267,11 @@ def get_children(entity):
     return child_tabs, id_list
 
 
-def get_father(entity):
+def get_father(data_dict, entity):
     """根据输入的实体，获取其父节点实体。
 
     Args:
+        data_dict(dict):
         entity(Entity):
 
     Returns:
@@ -309,10 +313,11 @@ def get_father(entity):
             return fa_tab, fa_ids
 
 
-def get_child_name(child_info):
+def get_child_name(data_dict, child_info):
     """根据子节点的信息，获取其名称。
 
     Args:
+        data_dict(dict):
         child_info(tuple):
 
     Returns:
@@ -364,10 +369,11 @@ def _get_name_sim(name1, name2, type_):
     return sim_matrix.max(axis=1).mean()
 
 
-def get_child_fea(child_info1, child_info2):
+def get_child_fea(data_dict, child_info1, child_info2):
     """根据子节点的信息，计算其特征。
 
     Args:
+        data_dict(dict):
         child_info1(tuple):
         child_info2(tuple:
 
@@ -379,8 +385,8 @@ def get_child_fea(child_info1, child_info2):
     high_sim_child = 0
     sim1, sim2, sim3 = 0, 0, 0
 
-    names1 = get_child_name(child_info1)
-    names2 = get_child_name(child_info2)
+    names1 = get_child_name(data_dict, child_info1)
+    names2 = get_child_name(data_dict, child_info2)
     len1 = len(names1)
     len2 = len(names2)
     min_len = min(len1, len2)
@@ -401,36 +407,38 @@ def get_child_fea(child_info1, child_info2):
     return [num_ratio, no_child_same, high_sim_child, sim1, sim2, sim3]
 
 
-def get_numeric_fea(entity1, entity2):
+def get_numeric_fea(data_dict, entity1, entity2):
     """计算两个实体的非字符类特征。
 
     Args:
+        data_dict(dict):
         entity1(Entity):
         entity2(Entity):
 
     Returns:
 
     """
-    return [compare_volt(entity1, entity2)]
+    return [compare_volt(data_dict, entity1, entity2)]
 
 
-def get_all_fea(entity1, entity2):
+def get_all_fea(data_dict, entity1, entity2):
     """对于来自不同系统的两个实体，计算其所有的特征。
 
     Args:
+        data_dict(dict):
         entity1(Entity):
         entity2(Entity:
 
     Returns:
 
     """
-    text_fea = get_text_fea(entity1, entity2)
+    text_fea = get_text_fea(data_dict, entity1, entity2)
 
-    child_info1 = get_children(entity1)
-    child_info2 = get_children(entity2)
-    child_fea = get_child_fea(child_info1, child_info2)
+    child_info1 = get_children(data_dict, entity1)
+    child_info2 = get_children(data_dict, entity2)
+    child_fea = get_child_fea(data_dict, child_info1, child_info2)
 
-    numeric_fea = get_numeric_fea(entity1, entity2)
+    numeric_fea = get_numeric_fea(data_dict, entity1, entity2)
 
     all_fea = text_fea + child_fea + numeric_fea
 
@@ -441,10 +449,11 @@ def get_all_fea(entity1, entity2):
     return pd.DataFrame([all_fea], columns=columns)
 
 
-def get_all_train_fea(train_set):
+def get_all_train_fea(data_dict, train_set):
     """处理所有的训练数据的特征。
 
     Args:
+        data_dict(dict):
         train_set(pd.DataFrame): 训练数据集
 
     Returns:
@@ -458,10 +467,10 @@ def get_all_train_fea(train_set):
         id1, id2 = row_data['id1'], row_data['id2']
         entity1 = Entity('yx', 'tran', id1, tab1)
         entity2 = Entity('pms', 'tran', id2, tab2)
-        text_fea = get_text_fea(entity1, entity2)
-        child_info1, child_info2 = get_children(entity1), get_children(entity2)
-        children_fea = get_child_fea(child_info1, child_info2)
-        numeric_fea = get_numeric_fea(entity1, entity2)
+        text_fea = get_text_fea(data_dict, entity1, entity2)
+        child_info1, child_info2 = get_children(data_dict, entity1), get_children(data_dict, entity2)
+        children_fea = get_child_fea(data_dict, child_info1, child_info2)
+        numeric_fea = get_numeric_fea(data_dict, entity1, entity2)
         all_fea = text_fea + children_fea + numeric_fea
         all_fea.append(label)
         fea_list.append(all_fea)
@@ -475,9 +484,9 @@ def get_all_train_fea(train_set):
 if __name__ == '__main__':
     data_name = 'sub_tagged_data.csv'
     train_data = pd.read_csv(data_name)
-    get_data_from_db(data_source_config, table_name)
+    data = get_data_from_db(data_source_config, table_name)
     logger.info('正在进行特征工程...')
-    train_data_fea = get_all_train_fea(train_data)
+    train_data_fea = get_all_train_fea(data, train_data)
     logger.info('特征工程结束')
     all_columns = train_data_fea.columns.tolist()
 
