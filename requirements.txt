@@ -1,0 +1,14 @@
+certifi==2020.12.5
+cx-Oracle==8.1.0
+jieba==0.42.1
+joblib==1.0.0
+numpy==1.19.4
+pandas==1.1.5
+pypinyin==0.40.0
+python-dateutil==2.8.1
+python-Levenshtein==0.12.0
+pytz==2020.4
+scikit-learn==0.23.2
+scipy==1.5.4
+six==1.15.0
+threadpoolctl==2.1.0
