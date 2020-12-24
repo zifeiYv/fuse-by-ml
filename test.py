@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from config import data_source_config, table_name, test_data
-from fuse_subs import get_data_from_db, get_all_fea
+from fuse_utils import get_data_from_db, get_all_fea
 from utils import gen_logger, Entity
 from grid_utils import table_properties, volt_mapping, table_relation, tab_conn_rel
 import numpy as np

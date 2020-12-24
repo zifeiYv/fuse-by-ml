@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-以`_<func name>`格式命名的表示基础函数，即，其输入为基本的python类型
-以`<func name>`格式命名的表示构造函数，即，其输入为非基本的python类型
+用于特征工程及建模的一些函数
 """
 import cx_Oracle
 from config import data_source_config, table_name
 import pandas as pd
 import numpy as np
-from utils import gen_logger, Entity, Similarities
+from utils import gen_logger, Entity, Similarities, _compute_name_fea
 from grid_utils import table_properties, volt_mapping, table_relation, tab_conn_rel
 from model import ModelStack
 
@@ -17,6 +16,8 @@ logger = gen_logger()
 def get_data_from_db(data_source, tabs):
     """从数据源读取指定表的数据。
 
+    只适用于最初采用Oracle数据进行验证，未来将会被移除。
+
     Args:
         data_source(dic): 数据源连接信息
         tabs(list): 存储表名的列表
@@ -25,9 +26,10 @@ def get_data_from_db(data_source, tabs):
 
     """
     data_dict = {}
-    db_type = data_source['type'].upper()
+    db_type = data_source['db_type'].upper()
     if db_type == 'ORACLE':
-        logger.info("开始读取数据...")
+        logger.info("Reading Oracle data...")
+        data_source = data_source['config']
         user = data_source['user']
         passwd = data_source['password']
         schema = data_source['schema']
@@ -104,60 +106,6 @@ def compare_volt(data_dict, entity1, entity2):
                     return 0
     else:
         return 0
-
-
-def _get_num_and_char(string):
-    """获取一个字符串中的所有数字和字母。
-
-    Args:
-        string(str):
-
-    Returns:
-
-    """
-    numbers, chars = '', ''
-    for i in string:
-        if '0' <= i <= '9':
-            numbers += i
-        elif 'a' <= i <= 'z' or 'A' <= i <= 'Z':
-            chars += i
-    return numbers, chars.upper()
-
-
-def _compute_name_fea(name1, name2):
-    """计算两个字符串的特征。
-
-    Args:
-        name1(str):
-        name2(str):
-
-    Returns:
-
-    """
-    simmer = Similarities()
-    sim1 = simmer.get_max_common_sub_seq_sim(name1, name2)
-    sim2 = simmer.get_pinyin_max_common_sub_seq_sim(name1, name2)
-    sim3 = simmer.get_edit_sim(name1, name2)
-
-    len1 = len(name1)
-    len2 = len(name2)
-    min_len = min([len1, len2])
-    len_ratio = min_len / (len1 + len2 - min_len)
-
-    numbers1, chars1 = _get_num_and_char(name1)
-    numbers2, chars2 = _get_num_and_char(name2)
-
-    both_has_num = (numbers1 == '' and numbers2 == '') or (numbers1 != '' and numbers2 != '')
-    has_same_num = numbers1 == numbers2
-    both_has_char = (chars1 == '' and chars2 == '') or (chars1 != '' and chars2 != '')
-    has_same_char = chars1 == chars2
-
-    both_has_num = 1 if both_has_num else 0
-    has_same_num = 1 if has_same_num else 0
-    both_has_char = 1 if both_has_char else 0
-    has_same_char = 1 if has_same_char else 0
-
-    return [sim1, sim2, sim3, len_ratio, both_has_num, has_same_num, both_has_char, has_same_char]
 
 
 def get_text_fea(data_dict, entity1, entity2):

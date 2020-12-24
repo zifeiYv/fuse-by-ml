@@ -7,7 +7,6 @@ import os
 
 class ModelStack:
     def __init__(self,  model_path):
-
         if not os.path.exists(model_path):
             os.makedirs(model_path)
         self.model_path = model_path

@@ -184,3 +184,57 @@ class Entity:
         self.ent_type = ent_type
         self.ent_id = ent_id
         self.ent_tab = ent_tab
+
+
+def _get_num_and_char(string):
+    """获取一个字符串中的所有数字和字母。
+
+    Args:
+        string(str):
+
+    Returns:
+
+    """
+    numbers, chars = '', ''
+    for i in string:
+        if '0' <= i <= '9':
+            numbers += i
+        elif 'a' <= i <= 'z' or 'A' <= i <= 'Z':
+            chars += i
+    return numbers, chars.upper()
+
+
+def _compute_name_fea(name1, name2):
+    """计算两个字符串的特征。
+
+    Args:
+        name1(str):
+        name2(str):
+
+    Returns:
+
+    """
+    simmer = Similarities()
+    sim1 = simmer.get_max_common_sub_seq_sim(name1, name2)
+    sim2 = simmer.get_pinyin_max_common_sub_seq_sim(name1, name2)
+    sim3 = simmer.get_edit_sim(name1, name2)
+
+    len1 = len(name1)
+    len2 = len(name2)
+    min_len = min([len1, len2])
+    len_ratio = min_len / (len1 + len2 - min_len)
+
+    numbers1, chars1 = _get_num_and_char(name1)
+    numbers2, chars2 = _get_num_and_char(name2)
+
+    both_has_num = (numbers1 == '' and numbers2 == '') or (numbers1 != '' and numbers2 != '')
+    has_same_num = numbers1 == numbers2
+    both_has_char = (chars1 == '' and chars2 == '') or (chars1 != '' and chars2 != '')
+    has_same_char = chars1 == chars2
+
+    both_has_num = 1 if both_has_num else 0
+    has_same_num = 1 if has_same_num else 0
+    both_has_char = 1 if both_has_char else 0
+    has_same_char = 1 if has_same_char else 0
+
+    return [sim1, sim2, sim3, len_ratio, both_has_num, has_same_num, both_has_char, has_same_char]
