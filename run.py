@@ -15,7 +15,7 @@ if __name__ == '__main__':
     logger.info("训练数据集读取成功")
     data = get_data_from_db(data_source_config, train_data, logger)
     logger.info('正在进行特征工程...')
-    train_data_fea = get_all_train_fea(data, train_data)
+    train_data_fea = get_all_train_fea(data, train_data, data_source_config)
     logger.info('特征工程结束')
     all_columns = train_data_fea.columns.tolist()
 
