@@ -2,3 +2,6 @@
 __pycache__/
 path_to_model/
 *.csv
+*.so
+build/
+*.c

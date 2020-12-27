@@ -3,15 +3,11 @@
 适用于云南项目现场的数据，MySQL数据库
 """
 import pymysql
-from config import data_source_config, table_name
 import pandas as pd
-from utils import gen_logger, Entity, Similarities
-from grid_utils_yn import table_properties, volt_mapping, table_relation, tab_conn_rel
-from model import ModelStack
-from fuse_utils import get_all_train_fea
+from grid_utils_yn import table_properties
 
 
-def get_data_from_db(data_source, train_data):
+def get_data_from_db(data_source, train_data, logger):
     """根据标注的训练集，从数据源读取指定表的指定数据。
 
     Args:
@@ -71,23 +67,3 @@ def check_tab_valid(table_list, data_source):
             raise Exception
     else:
         raise Exception
-
-
-if __name__ == '__main__':
-    logger = gen_logger()
-    data_name = 'sub_tagged_data.csv'
-    train_data = pd.read_csv(data_name)
-    data = get_data_from_db(data_source_config, train_data)
-    logger.info('正在进行特征工程...')
-    train_data_fea = get_all_train_fea(data, train_data)
-    logger.info('特征工程结束')
-    all_columns = train_data_fea.columns.tolist()
-
-    sub_model_name = ['name', 'child', 'feature']
-    fea_list = [all_columns[0: 8], all_columns[8: 14], all_columns[13: 15] + all_columns[8: 10]]
-
-    model_path = './path_to_model'
-    modeler = ModelStack(model_path)
-    logger.info('正在进行模型训练...')
-    modeler.build_model(train_data_fea, all_columns[-1], fea_list, sub_model_name)
-    logger.info('模型训练结束')
