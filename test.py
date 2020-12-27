@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-from config import data_source_config, table_name, test_data
-from fuse_utils import get_data_from_db, get_all_fea
+from config import data_source_config, table_names, test_data
+from fuse_utils import get_all_fea
+from fuse_yn import get_data_from_db
 from utils import gen_logger, Entity
-from grid_utils import table_properties, volt_mapping, table_relation, tab_conn_rel
+from grid_utils_yn import table_properties
 import numpy as np
 import pandas as pd
 import pickle
-
-logger = gen_logger()
 
 
 def predict(df, entity1, entity2, models):
@@ -46,7 +45,7 @@ def predict(df, entity1, entity2, models):
     return sim_dict
 
 
-def match_entity(df, data, models):
+def match_entity(df, data, models, logger):
     """使用训练好的模型对测试数据进行预测。
 
     Args:
@@ -59,15 +58,12 @@ def match_entity(df, data, models):
     """
     yx_tab = list(data['yx'].keys())[0]
     yx_list = [(i, yx_tab) for i in data['yx'][yx_tab]]
-    yx_df = df[yx_tab]
 
     pms_tab = list(data['pms'].keys())[0]
     pms_list = [(i, pms_tab) for i in data['pms'][pms_tab]]
-    pms_df = df[pms_tab]
 
     gis_tab = list(data['gis'].keys())[0]
     gis_list = [(i, gis_tab) for i in data['gis'][gis_tab]]
-    gis_df = df[gis_tab]
 
     res_list = []
     # matching with pms and gis basing on yx
@@ -142,7 +138,6 @@ def match_entity(df, data, models):
     # matching with gis basing on pms
     logger.info('2nd, matching with gis basing on pms ...')
     for term in pms_list:
-        id_field = table_properties[pms_tab]['idColName']
         base_entity = Entity('pms', 'line', term[0], term[1])
 
         # travers among gis
@@ -186,12 +181,13 @@ def match_entity(df, data, models):
 
 
 if __name__ == '__main__':
+    logger = gen_logger()
     model_path = './path_to_model'
     model0 = pickle.load(open(model_path + '/sub_rf_name.pkl', 'rb'))
     model1 = pickle.load(open(model_path + '/sub_rf_child.pkl', 'rb'))
     model2 = pickle.load(open(model_path + '/sub_rf_feature.pkl', 'rb'))
     stack_model = pickle.load(open(model_path + '/stack_model.pkl', 'rb'))
     models = [model0, model1, model2, stack_model]
-    data_dict = get_data_from_db(data_source_config, table_name)
-    pred_res = match_entity(data_dict, test_data, models)
+    data_dict = get_data_from_db(data_source_config, table_names, logger)
+    pred_res = match_entity(data_dict, test_data, models, logger)
     pred_res.to_csv('./pred_res.csv', index=False)

@@ -29,9 +29,28 @@ table_properties = {
     'net_s_substation_gis': {'systemType': 'gis', 'idColName': 'id',
                              'nameCol': 'fl_name', 'addrCol': 'address',
                              'voltCol': 'base_voltage_id', 'orgCol': 'mrid'},
+
     'dw_xlxd_yx': {'systemType': 'yx', 'idColName': 'xlbh',
                    'nameCol': 'xlmc', 'addrCol': '',
                    'voltCol': 'dydjdm', 'orgCol': ''},
+    'line_sc': {'systemType': 'sc', 'idColName': 'id',
+                'nameCol': 'fl_name', 'addrCol': '',
+                'voltCol': 'base_voltage_id', 'orgCol': ''},
+    'dm_grid_m_net_df_branch_kx_gis': {'systemType': 'gis', 'idColName': 'id',
+                                       'nameCol': 'fl_name', 'addrCol': '',
+                                       'voltCol': 'base_voltage_id', 'orgCol': 'mrid'},
+
+    'dw_yxbyq_yx': {'systemType': 'yx', 'idColName': 'sbbs',
+                    'nameCol': 'mc', 'addrCol': '',
+                    'voltCol': '', 'orgCol': 'gddwbm'},
+
+    'power_transformer_sc': {'systemType': 'sc', 'idColName': 'id',
+                             'nameCol': 'fl_name', 'addrCol': 'zlocation',
+                             'voltCol': 'base_voltage_id', 'orgCol': ''},
+
+    'net_ds_trans_gis': {'systemType': 'gis', 'idColName': 'id',
+                         'nameCol': 'fl_name', 'addrCol': '',
+                         'voltCol': 'base_voltage_id', 'orgCol': 'mrid'}
 }
 table_names = [
     'dw_bdz_yx', 'bdz_xlxd_yx', 'dw_xlxd_yx', 'xlxd_yxbyq_yx', 'dw_yxbyq_yx',
@@ -77,16 +96,9 @@ tab_conn_rel = {
                                                          'dm_grid_m_net_df_branch_kx_gis', 'to_id', 'id']],
 }
 
-# 电压等级在不同系统中的映射关系, 'pms': 'cms'
+# 电压等级在不同系统中的映射关系, 'yx': 'sc'
 volt_mapping = {
-    '01': ['AC00062'], '02': ['AC00122'], '03': ['AC00242'], '04': ['AC00362'],
-    '05': ['AC00482'], '06': ['AC01102'], '07': ['AC02202'], '09': ['AC06602'],
-    '10': ['AC10002'], '11': ['AC06002'], '12': ['AC07502'], '13': ['AC15002'],
-    '14': ['AC30002'], '15': ['AC25002'], '20': ['AC00031'], '21': ['AC00061'],
-    '22': ['AC00101'], '24': ['AC00201'], '25': ['AC00351'], '30': ['AC00661'],
-    '32': ['AC01101'], '33': ['AC02201'], '34': ['AC03301'], '35': ['AC05001'],
-    '36': ['AC07501'], '37': ['AC10001'], '51': ['DC00062'], '52': ['DC00122'],
-    '53': ['DC00242'], '54': ['DC00362'], '55': ['DC00482'], '56': ['DC01102'],
-    '60': ['DC02202'], '70': ['DC06002'], '71': ['DC07502'], '72': ['DC15002'],
-    '73': ['DC30002'], '83': ['DC05001']
+    "13": "306",  # 220kV
+    "12": "298",  # 110kV
+    "10": "290",  # 35kV
 }

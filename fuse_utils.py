@@ -6,7 +6,14 @@ import cx_Oracle
 import pandas as pd
 import numpy as np
 from utils import Entity, Similarities, _compute_name_fea
-from grid_utils import table_properties, volt_mapping, table_relation, tab_conn_rel
+from grid_utils_yn import table_properties, volt_mapping, table_relation, tab_conn_rel
+import pymysql
+
+
+def return_mysql_conn(data_source):
+    data_source = data_source['config']
+    conn = pymysql.connect(**data_source)
+    return conn
 
 
 def get_data_from_db(data_source, tabs, logger):
@@ -144,34 +151,31 @@ def get_text_fea(data_dict, entity1, entity2):
         return _compute_name_fea(name1, name2)
 
 
-def get_connected_value(df1, value_field1, values1, conn_field, df2, target_field):
-    """根据基准表中的某个字段的某些值，找到关联表中的指定字段的关联值。
+def get_connected_value(from_id, inner_table, connection):
+    """根据父实体的id，通过中间表，获取子实体的id列表。
 
     Args:
-        df1(pd.DataFrame): 基础表数据
-        value_field1(str): 基础字段
-        values1(list): 基础值
-        conn_field(str): 与目标表关联的字段
-        df2(pd.DataFrame): 目标表
-        target_field(str): 待转换成的目标字段
+        from_id(str):
+        inner_table(str):
+        connection:
 
     Returns:
 
     """
-    value = df1[df1[value_field1].isin(values1)]
-    if len(value) == 0:
+    with connection.cursor() as cr:
+        cr.execute(f'select to_id from {inner_table} where from_id="{from_id}"')
+    value = cr.fetchall()
+    if not value:
         return []
     else:
-        conn_value = value[conn_field].to_list()
-        value2 = df2[df2[target_field].isin(conn_value)][target_field].tolist()
-        return value2
+        list(map(lambda x: x[0], value))
 
 
-def get_children(data_dict, entity):
+def get_children(entity, connection):
     """根据输入的实体，获取其子节点实体。
 
     Args:
-        data_dict(dict):
+        connection:
         entity(Entity):
 
     Returns:
@@ -180,36 +184,11 @@ def get_children(data_dict, entity):
     id_ = entity.ent_id
     tab = entity.ent_tab
     child_tab = table_relation[tab]['child']
-    child_tabs = child_tab.split(',')
-    id_list = []
-    for t in child_tabs:
-        df1 = data_dict[tab]
-        id_field = table_properties[tab]['idColName']
-        child_id_field = table_properties[t]['idColName']
-        child_df = data_dict[t]
-        path = tab + '-' + t
-        conn_list = tab_conn_rel[path]
-
-        former_field = conn_list[0][2]
-        latter_tab = conn_list[0][1]
-        latter_field = conn_list[0][3]
-        df2 = data_dict[latter_tab]
-        values = get_connected_value(df1, id_field, [id_], former_field, df2, latter_field)
-        if not values:
-            continue
-        if len(conn_list) == 1:  # No inner table
-            child_ids = child_df[child_df[latter_field].isin(values)][child_id_field].tolist()
-            id_list.append(child_ids)
-        else:  # One inner table
-            df1 = df2
-            id_field = latter_field
-            former_field = conn_list[1][2]
-            df2 = data_dict[conn_list[1][1]]
-            latter_field = conn_list[1][3]
-            values = get_connected_value(df1, id_field, values, former_field, df2, latter_field)
-            child_ids = child_df[child_df[latter_field].isin(values)][child_id_field].tolist()
-            id_list.append(child_ids)
-    return child_tabs, id_list
+    path = tab + '-' + child_tab
+    conn_list = tab_conn_rel[path]
+    inner_tab = conn_list[0][1]
+    values = get_connected_value(id_, inner_tab, connection)
+    return child_tab, values
 
 
 def get_father(data_dict, entity):
@@ -258,25 +237,22 @@ def get_father(data_dict, entity):
             return fa_tab, fa_ids
 
 
-def get_child_name(data_dict, child_info):
+def get_child_name(child_info, connection):
     """根据子节点的信息，获取其名称。
 
     Args:
-        data_dict(dict):
         child_info(tuple):
+        connection:
 
     Returns:
 
     """
-    tables, lists = child_info
-    names = []
-    for t in tables:
-        id_filed = table_properties[t]['idColName']
-        name_filed = table_properties[t]['nameCol']
-        df = data_dict[t]
-        values = df[df[id_filed].isin(lists)]
-        names.extend(values[name_filed].tolist())
-    return names
+    table, lists = child_info
+    id_filed = table_properties[table]['idColName']
+    name_filed = table_properties[table]['nameCol']
+    values = pd.read_sql(f'select {name_filed} from {table} where {id_filed} in ({tuple(lists)})',
+                         connection)
+    return values.iloc[:, 0].tolist()
 
 
 def _get_name_sim(name1, name2, type_):
@@ -314,11 +290,11 @@ def _get_name_sim(name1, name2, type_):
     return sim_matrix.max(axis=1).mean()
 
 
-def get_child_fea(data_dict, child_info1, child_info2):
+def get_child_fea(connection, child_info1, child_info2):
     """根据子节点的信息，计算其特征。
 
     Args:
-        data_dict(dict):
+        connection:
         child_info1(tuple):
         child_info2(tuple:
 
@@ -330,8 +306,8 @@ def get_child_fea(data_dict, child_info1, child_info2):
     high_sim_child = 0
     sim1, sim2, sim3 = 0, 0, 0
 
-    names1 = get_child_name(data_dict, child_info1)
-    names2 = get_child_name(data_dict, child_info2)
+    names1 = get_child_name(child_info1, connection)
+    names2 = get_child_name(child_info2, connection)
     len1 = len(names1)
     len2 = len(names2)
     min_len = min(len1, len2)
@@ -366,22 +342,23 @@ def get_numeric_fea(data_dict, entity1, entity2):
     return [compare_volt(data_dict, entity1, entity2)]
 
 
-def get_all_fea(data_dict, entity1, entity2):
+def get_all_fea(data_dict, entity1, entity2, connection):
     """对于来自不同系统的两个实体，计算其所有的特征。
 
     Args:
         data_dict(dict):
         entity1(Entity):
-        entity2(Entity:
+        entity2(Entity):
+        connection:
 
     Returns:
 
     """
     text_fea = get_text_fea(data_dict, entity1, entity2)
 
-    child_info1 = get_children(data_dict, entity1)
-    child_info2 = get_children(data_dict, entity2)
-    child_fea = get_child_fea(data_dict, child_info1, child_info2)
+    child_info1 = get_children(entity1, connection)
+    child_info2 = get_children(entity2, connection)
+    child_fea = get_child_fea(connection, child_info1, child_info2)
 
     numeric_fea = get_numeric_fea(data_dict, entity1, entity2)
 
@@ -394,28 +371,36 @@ def get_all_fea(data_dict, entity1, entity2):
     return pd.DataFrame([all_fea], columns=columns)
 
 
-def get_all_train_fea(data_dict, train_set):
+def get_all_train_fea(data_dict, train_df, data_source):
     """处理所有的训练数据的特征。
 
     Args:
         data_dict(dict):
-        train_set(pd.DataFrame): 训练数据集
+        train_df(pd.DataFrame): 训练数据集
+        data_source:
 
     Returns:
 
     """
+    connection = return_mysql_conn(data_source)
     fea_list = []
-    for i in range(train_set.shape[0]):
-        row_data = train_set.iloc[i]
+    for i in range(train_df.shape[0]):
+        row_data = train_df.iloc[i]
         tab1, tab2 = row_data['table1'], row_data['table2']
         label = row_data['label']
         id1, id2 = row_data['id1'], row_data['id2']
         entity1 = Entity('yx', 'tran', id1, tab1)
         entity2 = Entity('pms', 'tran', id2, tab2)
+        # 文本特征
         text_fea = get_text_fea(data_dict, entity1, entity2)
-        child_info1, child_info2 = get_children(data_dict, entity1), get_children(data_dict, entity2)
+
+        # 子实体的特征
+        child_info1, child_info2 = get_children(entity1, connection), get_children(entity2, connection)
         children_fea = get_child_fea(data_dict, child_info1, child_info2)
+
+        # 数值类特征
         numeric_fea = get_numeric_fea(data_dict, entity1, entity2)
+
         all_fea = text_fea + children_fea + numeric_fea
         all_fea.append(label)
         fea_list.append(all_fea)
