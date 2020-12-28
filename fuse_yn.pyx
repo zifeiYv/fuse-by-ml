@@ -46,8 +46,8 @@ def get_data_from_db(data_source, train_data, logger):
         for tab in data_ids:
             # 只获取标注数据集中的数据
             # todo：只获取可利用的字段，进一步减小内存占用
-            value = pd.read_sql(f'select * from {tab} where {table_properties[tab]} '
-                                f'in {data_ids[tab]}', connection)
+            value = pd.read_sql(f'select * from {tab} where {table_properties[tab]["idColName"]} '
+                                f'in {tuple(data_ids[tab])}', connection)
             data_dict[tab] = value
     return data_dict
 

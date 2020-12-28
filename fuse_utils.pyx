@@ -250,8 +250,9 @@ def get_child_name(child_info, connection):
     table, lists = child_info
     id_filed = table_properties[table]['idColName']
     name_filed = table_properties[table]['nameCol']
-    values = pd.read_sql(f'select {name_filed} from {table} where {id_filed} in ({tuple(lists)})',
-                         connection)
+    sql = f'select {name_filed} from {table} where {id_filed} in {tuple(lists)}'
+    print(sql)
+    values = pd.read_sql(sql, connection)
     return values.iloc[:, 0].tolist()
 
 

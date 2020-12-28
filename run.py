@@ -12,8 +12,10 @@ if __name__ == '__main__':
     logger.info("日志模块加载成功")
     data_name = 'sub_tagged_data.csv'
     train_data = pd.read_csv(data_name)
+    train_data = train_data.astype({'id1': 'str', 'id2': 'str'})
     logger.info("训练数据集读取成功")
     data = get_data_from_db(data_source_config, train_data, logger)
+    logger.info("数据库数据加载成功")
     logger.info('正在进行特征工程...')
     train_data_fea = get_all_train_fea(data, train_data, data_source_config)
     logger.info('特征工程结束')
