@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-from config import data_source_config, table_names, test_data
-from fuse_utils import get_all_fea
-from fuse_yn import get_data_from_db
+from config import data_source_config, test_data
+from fuse_utils import get_all_fea, return_mysql_conn
 from utils import gen_logger, Entity
 from grid_utils_yn import table_properties
 import numpy as np
@@ -21,7 +20,7 @@ def predict(df, entity1, entity2, models):
     Returns:
 
     """
-    fea_df = get_all_fea(df, entity1, entity2)
+    fea_df = get_all_fea(df, entity1, entity2, data_source_config)
     columns = fea_df.columns.tolist()
     fea_list = [columns[0: 8], columns[8: 14], columns[13: 15] + columns[8: 10]]
     row_num = fea_df.shape[0]
@@ -180,6 +179,24 @@ def match_entity(df, data, models, logger):
     return res_df
 
 
+def get_test_data_dict(test_data):
+    conn = return_mysql_conn(data_source_config)
+    data_dict = {}
+    for sys in test_data:
+        for tab in test_data[sys]:
+            ids = tuple(test_data[sys][tab])
+            sql = f"select * from {tab} where {table_properties[tab]['idColName']} in {ids}"
+            if len(ids) == 0:
+                continue
+            elif len(ids) == 1:
+                sql = sql[:-2] + ')'
+            else:
+                pass
+            value = pd.read_sql(sql, conn)
+            data_dict[tab] = value
+    return data_dict
+
+
 if __name__ == '__main__':
     logger = gen_logger()
     model_path = './path_to_model'
@@ -188,6 +205,6 @@ if __name__ == '__main__':
     model2 = pickle.load(open(model_path + '/sub_rf_feature.pkl', 'rb'))
     stack_model = pickle.load(open(model_path + '/stack_model.pkl', 'rb'))
     models = [model0, model1, model2, stack_model]
-    data_dict = get_data_from_db(data_source_config, table_names, logger)
+    data_dict = get_test_data_dict(test_data)
     pred_res = match_entity(data_dict, test_data, models, logger)
     pred_res.to_csv('./pred_res.csv', index=False)

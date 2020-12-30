@@ -168,7 +168,7 @@ def get_connected_value(from_id, inner_table, connection):
     if not value:
         return []
     else:
-        list(map(lambda x: x[0], value))
+        return list(map(lambda x: x[0], value))
 
 
 def get_children(entity, connection):
@@ -251,6 +251,10 @@ def get_child_name(child_info, connection):
     id_filed = table_properties[table]['idColName']
     name_filed = table_properties[table]['nameCol']
     sql = f'select {name_filed} from {table} where {id_filed} in {tuple(lists)}'
+    if len(lists) == 1:
+        sql = sql[:-2] + ')'
+    elif not lists:
+        return []
     print(sql)
     values = pd.read_sql(sql, connection)
     return values.iloc[:, 0].tolist()
@@ -340,21 +344,24 @@ def get_numeric_fea(data_dict, entity1, entity2):
     Returns:
 
     """
-    return [compare_volt(data_dict, entity1, entity2)]
+    return [0]
+    # return [compare_volt(data_dict, entity1, entity2)]
 
 
-def get_all_fea(data_dict, entity1, entity2, connection):
+def get_all_fea(data_dict, entity1, entity2, data_source):
     """对于来自不同系统的两个实体，计算其所有的特征。
 
     Args:
         data_dict(dict):
         entity1(Entity):
         entity2(Entity):
-        connection:
+        data_source:
 
     Returns:
 
     """
+    connection = return_mysql_conn(data_source)
+
     text_fea = get_text_fea(data_dict, entity1, entity2)
 
     child_info1 = get_children(entity1, connection)
@@ -397,7 +404,9 @@ def get_all_train_fea(data_dict, train_df, data_source):
 
         # 子实体的特征
         child_info1, child_info2 = get_children(entity1, connection), get_children(entity2, connection)
-        children_fea = get_child_fea(data_dict, child_info1, child_info2)
+        print(child_info1)
+        print(child_info2)
+        children_fea = get_child_fea(connection, child_info1, child_info2)
 
         # 数值类特征
         numeric_fea = get_numeric_fea(data_dict, entity1, entity2)

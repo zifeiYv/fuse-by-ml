@@ -14,7 +14,7 @@ table_relation = {
     'power_transformer_sc': {'father': 'line_sc', 'child': ''},
 
     'net_s_substation_gis': {'father': '', 'child': 'dm_grid_m_net_df_branch_kx_gis'},
-    'dm_grid_m_net_df_branch_kx_gis': {'father': 'net_s_substation_gis', 'child': 'T_SB_ZNYC_PDBYQ,T_SB_ZWYC_ZSBYQ'},
+    'dm_grid_m_net_df_branch_kx_gis': {'father': 'net_s_substation_gis', 'child': 'net_ds_trans_gis'},
     'net_ds_trans_gis': {'father': 'dm_grid_m_net_df_branch_kx_gis', 'child': ''},
 }
 

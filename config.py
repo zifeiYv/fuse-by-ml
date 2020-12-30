@@ -19,13 +19,6 @@ data_source_config = {
     }
 }
 
-# 融合训练及预测所用到的表
-table_names = [
-    'dw_bdz_yx', 'bdz_xlxd_yx', 'dw_xlxd_yx', 'xlxd_yxbyq_yx', 'dw_yxbyq_yx',
-    'substation_sc', 'substation_tenkvline_sc', 'line_sc', 'tenkvline_distran_sc', 'power_transformer_sc',
-    'net_s_substation_gis', 'substation_tenkvline1_gis', 'dm_grid_m_net_df_branch_kx_gis',
-    'grid_tenkvline_distran_rela1_gis', 'net_ds_trans_gis'
-]
 
 # 用于测试模型效果的数据
 test_data = {
