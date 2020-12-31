@@ -215,6 +215,7 @@ def _compute_name_fea(name1, name2):
 
     """
     simmer = Similarities()
+    # 目前只用了三种相似度函数：最大公共子序列相似度、拼音的最大公共子序列相似度、编辑距离相似度
     sim1 = simmer.get_max_common_sub_seq_sim(name1, name2)
     sim2 = simmer.get_pinyin_max_common_sub_seq_sim(name1, name2)
     sim3 = simmer.get_edit_sim(name1, name2)
